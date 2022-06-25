@@ -1,107 +1,72 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using RestWithASPNETUdemy.Model;
+using RestWithASPNETUdemy.Services;
 
 namespace RestWithASPNETUdemy.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class PersonController : ControllerBase
     {
 
         private readonly ILogger<PersonController> _logger;
-        public PersonController(ILogger<PersonController> logger)
+
+        // Declaration of the service used
+        private IPersonService _personService;
+
+        // Injection of an instance of IPersonService
+        // when creating an instance of PersonController
+        public PersonController(ILogger<PersonController> logger, IPersonService personService)
         {
             _logger = logger;
+            _personService = personService;
         }
 
-        [HttpGet("sum/{firstNumber}/{secondNumber}")]
-        public IActionResult Sum(string firstNumber, string secondNumber)
+        // Maps GET requests to https://localhost:{port}/api/person
+        // Get no parameters for FindAll -> Search All
+        [HttpGet]
+        public IActionResult Get()
         {
-            if (IsNumeric(firstNumber) && IsNumeric(secondNumber))
-            {
-                var sum = ConvertToDecimal(firstNumber) + ConvertToDecimal(secondNumber);
-                return Ok(sum.ToString());
-            }
-            return BadRequest("Invalid Input");
+            return Ok(_personService.FindAll());
         }
 
-        [HttpGet("subtraction/{firstNumber}/{secondNumber}")]
-        public IActionResult Subtraction(string firstNumber, string secondNumber)
+        // Maps GET requests to https://localhost:{port}/api/person/{id}
+        // receiving an ID as in the Request Path
+        // Get with parameters for FindById -> Search by ID
+        [HttpGet("{id}")]
+        public IActionResult Get(long id)
         {
-            if (IsNumeric(firstNumber) && IsNumeric(secondNumber))
-            {
-                var sum = ConvertToDecimal(firstNumber) - ConvertToDecimal(secondNumber);
-                return Ok(sum.ToString());
-            }
-            return BadRequest("Invalid Input");
+            var person = _personService.FindByID(id);
+            if (person == null) return NotFound();
+            return Ok(person);
         }
 
-        [HttpGet("multiplication/{firstNumber}/{secondNumber}")]
-        public IActionResult Multiplication(string firstNumber, string secondNumber)
+        // Maps POST requests to https://localhost:{port}/api/person/
+        // [FromBody] consumes the JSON object sent in the request body
+        [HttpPost]
+        public IActionResult Post([FromBody] Person person)
         {
-            if (IsNumeric(firstNumber) && IsNumeric(secondNumber))
-            {
-                var sum = ConvertToDecimal(firstNumber) * ConvertToDecimal(secondNumber);
-                return Ok(sum.ToString());
-            }
-            return BadRequest("Invalid Input");
+            if (person == null) return BadRequest();
+            return Ok(_personService.Create(person));
         }
 
-        [HttpGet("division/{firstNumber}/{secondNumber}")]
-        public IActionResult Division(string firstNumber, string secondNumber)
+        // Maps PUT requests to https://localhost:{port}/api/person/
+        // [FromBody] consumes the JSON object sent in the request body
+        [HttpPut]
+        public IActionResult Put([FromBody] Person person)
         {
-            if (IsNumeric(firstNumber) && IsNumeric(secondNumber))
-            {
-                var sum = ConvertToDecimal(firstNumber) / ConvertToDecimal(secondNumber);
-                return Ok(sum.ToString());
-            }
-            return BadRequest("Invalid Input");
+            if (person == null) return BadRequest();
+            return Ok(_personService.Update(person));
         }
 
-        [HttpGet("mean/{firstNumber}/{secondNumber}")]
-        public IActionResult Mean(string firstNumber, string secondNumber)
+        // Maps DELETE requests to https://localhost:{port}/api/person/{id}
+        // receiving an ID as in the Request Path
+        [HttpDelete("{id}")]
+        public IActionResult Delete(long id)
         {
-            if (IsNumeric(firstNumber) && IsNumeric(secondNumber))
-            {
-                var sum = (ConvertToDecimal(firstNumber) + ConvertToDecimal(secondNumber)) / 2;
-                return Ok(sum.ToString());
-            }
-            return BadRequest("Invalid Input");
-        }
-
-        [HttpGet("square-root/{firstNumber}")]
-        public IActionResult SquareRoot(string firstNumber)
-        {
-            if (IsNumeric(firstNumber))
-            {
-                var squareRoot = Math.Sqrt((double)ConvertToDecimal(firstNumber));
-                return Ok(squareRoot.ToString());
-            }
-            return BadRequest("Invalid Input");
-        }
-        private bool IsNumeric(string strNumber)
-        {
-            double number;
-            bool isNumber = double.TryParse(
-                strNumber,
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.NumberFormatInfo.InvariantInfo,
-                out number);
-            return isNumber;
-        }
-
-        private decimal ConvertToDecimal(string strNumber)
-        {
-            decimal decimalValue;
-            if (decimal.TryParse(strNumber, out decimalValue))
-            {
-                return decimalValue;
-            }
-            return 0;
+            _personService.Delete(id);
+            return NoContent();
         }
     }
 }
